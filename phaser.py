@@ -155,6 +155,11 @@ class Phaser(Module):
                         )
                     )
 
+        phaser_registers += [
+            ("adc0_data", Register(write=False), Register(write=False)),
+            ("adc1_data", Register(write=False), Register(write=False)),
+        ]
+
         self.decoder.map_registers(phaser_registers)
 
         dac_ctrl = platform.request("dac_ctrl")
@@ -265,6 +270,13 @@ class Phaser(Module):
             [inp.eq(data) for inp, data in zip(iir.inp, adc.data)],
             iir.stb_in.eq(adc.done),
         ]
+
+        for i in range(adc_parameters.channels):
+            self.sync += [
+                If(adc.done,
+                    self.decoder.get(f"adc{i}_data", "read").eq(adc.data[i])
+                ),
+            ]
 
         # connect iir to servo data registers
         for i in range(SERVO_CHANNELS):
